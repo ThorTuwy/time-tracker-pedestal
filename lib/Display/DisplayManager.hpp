@@ -1,3 +1,6 @@
+#ifndef DISPLAY_MANAGER_H
+#define DISPLAY_MANAGER_H
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -16,9 +19,6 @@ public:
     bool begin();
     
     void showActivityTrackTime(const std::string& activityName,const uint64_t activityDuration);
-    void showActivityTrackSummary(){
-        
-    }
 
     void showMessage(const std::string& msg);
     void clear();
@@ -39,3 +39,5 @@ private:
     std::string activityName;
     uint64_t lastActivityDuration;
 };
+
+#endif

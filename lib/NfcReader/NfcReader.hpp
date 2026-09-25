@@ -1,3 +1,6 @@
+#ifndef NFC_READER_H
+#define NFC_READER_H
+
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -13,5 +16,7 @@ public:
     std::vector<uint8_t>  readTagUUID();
 
 private:
-
+    
 };
+
+#endif
