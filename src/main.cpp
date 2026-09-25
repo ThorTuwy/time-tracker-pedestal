@@ -26,11 +26,7 @@ void setup() {
     displayManager.showMessage("No tag :C\n");
 }
 
-const u32_t LOOP_DELAY = 300;
 
-const u8_t MAX_READ_RETRY=3;
-u8_t readRetry=0;
-std::vector<uint8_t> currentUUID;
 
 void printUUID(const char* label, const std::vector<uint8_t>& uuid) {
     Serial.printf("%s: ", label);
@@ -45,19 +41,26 @@ void printUUID(const char* label, const std::vector<uint8_t>& uuid) {
     Serial.println();
 }
 
-void loop() {
+const u32_t NFC_READER_DELAY = 300;
+const u8_t MAX_READ_RETRY=3;
+
+u32_t lastTickLMainLogic=0;
+u8_t readRetry=0;
+std::vector<uint8_t> currentUUID;
+
+// NFC reading + Activity tracking +  OLED display
+void tickMainLogic(){
+    if(millis() - lastTickLMainLogic < NFC_READER_DELAY) return;
+    
     std::vector<uint8_t> readUUID = nfcReader.readTagUUID();
     printUUID("Read UUID   ", readUUID);
     printUUID("Current UUID", currentUUID);
-
     
     if(readUUID.empty() and currentUUID.empty()){
-        delay(LOOP_DELAY);
         return;
     }
     if(readUUID.empty() and !currentUUID.empty() and readRetry<MAX_READ_RETRY){
         readRetry++;
-        delay(LOOP_DELAY);
         return;
     };
     currentUUID=readUUID;
@@ -67,12 +70,14 @@ void loop() {
     if(currentUUID.size()!=0){
         uint32_t uuidHash = ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
         activityTracker.updateActivity(uuidHash);
-        displayManager.showActivityCurrentTime("Prueba123",activityTracker.getCurrentActivityDuration());
+        displayManager.showActivityTrackTime("Prueba123",activityTracker.getCurrentActivityDuration());
     }
     else{
         activityTracker.stopActivity();
         displayManager.showMessage("No tag :C\n");
     }
-    
-    delay(LOOP_DELAY);
+}
+
+void loop() {
+    tickMainLogic();
 }

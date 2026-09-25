@@ -10,7 +10,7 @@ DisplayManager::DisplayManager(uint8_t address)
 
 bool DisplayManager::begin() {
     if (!display.begin(SSD1306_SWITCHCAPVCC, i2cAddress)) {
-        return false; // Let the caller decide how to handle the error
+        return false;
     }
 
     display.clearDisplay();
@@ -20,7 +20,8 @@ bool DisplayManager::begin() {
 }
 
 
-void DisplayManager::showActivityCurrentTime(const std::string& activityName,const uint64_t activityDuration){
+
+void DisplayManager::showActivityTrackTime(const std::string& activityName,const uint64_t activityDuration){
     uint32_t hours   = (activityDuration / 3600);
     uint32_t minutes = (activityDuration % 3600) / 60;
 
@@ -51,8 +52,6 @@ void DisplayManager::showActivityCurrentTime(const std::string& activityName,con
     display.setCursor(68, 52);
     snprintf(timeStr, sizeof(timeStr), "%02um", minutes);
     display.print(timeStr);
-
-    
 
     display.display();
 }

@@ -4,13 +4,21 @@
 #include <Adafruit_SSD1306.h>
 #include <Fonts/FreeMono9pt7b.h>
 
+ enum class DisplayState : uint8_t {
+    SHOWING_ACTIVITY_TRACK_TIME=0,
+    SHOWING_ACTIVITY_TRACK_SUMMARY=1
+};
+
 class DisplayManager {
 public:
     DisplayManager( uint8_t i2cAddress = 0x3C);
 
     bool begin();
-
-    void showActivityCurrentTime(const std::string& activityName,const uint64_t activityDuration);
+    
+    void showActivityTrackTime(const std::string& activityName,const uint64_t activityDuration);
+    void showActivityTrackSummary(){
+        
+    }
 
     void showMessage(const std::string& msg);
     void clear();
