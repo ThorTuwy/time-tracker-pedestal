@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <WiFi.h>
 #include <SPI.h>
 #include <Wire.h>
 
@@ -14,6 +15,37 @@ NfcReader nfcReader(Config::CLRC663_I2C_ADDRESS);
 DisplayManager displayManager(Config::OLED_I2C_ADDRESS);
 ActivityTracker activityTracker;
 
+//TODO: Make something on device to configure this.
+const char* ssid     = "*";
+const char* password = "*";
+
+void setupWIFI(){
+    Serial.printf("Connecting to %s ", ssid);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println(" CONNECTED!");
+} 
+
+//TODO: Make something on device to configure this.
+const char* ntpServer = "pool.ntp.org"; 
+const char* timezone = "CET-1CEST,M3.5.0,M10.5.0/3"; 
+
+void setupNTP(){
+    configTzTime(timezone, ntpServer);
+
+    Serial.println("Synchronizing with NTP server in Spain...");
+    struct tm timeinfo;
+    while (!getLocalTime(&timeinfo)) {
+        Serial.print(".");
+        delay(200);
+    }
+    
+    Serial.println("\nTime synchronized successfully!");
+}
+
 void setup() {
     delay(2000);
     Serial.begin(Config::BAUD_RATE);
@@ -22,6 +54,9 @@ void setup() {
     nfcReader.begin(Config::SDA,Config::SCL);
     displayManager.begin();
     activityTracker.begin();
+
+    setupWIFI();
+    setupNTP();
 
     displayManager.showMessage("No tag :C\n");
 }
@@ -51,6 +86,7 @@ std::vector<uint8_t> currentUUID;
 // NFC reading + Activity tracking +  OLED display
 void tickMainLogic(){
     if(millis() - lastTickLMainLogic < NFC_READER_DELAY) return;
+    lastTickLMainLogic=millis();
     
     std::vector<uint8_t> readUUID = nfcReader.readTagUUID();
     printUUID("Read UUID   ", readUUID);
@@ -74,7 +110,15 @@ void tickMainLogic(){
     }
     else{
         activityTracker.stopActivity();
-        displayManager.showMessage("No tag :C\n");
+        struct tm timeinfo;
+        if (!getLocalTime(&timeinfo)) {
+            Serial.println("Failed to obtain time");
+            return;
+        }
+
+        char currentTime[64];
+        strftime(currentTime, sizeof(currentTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
+        displayManager.showMessage(currentTime);
     }
 }
 

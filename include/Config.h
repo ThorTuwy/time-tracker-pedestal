@@ -8,4 +8,6 @@ namespace Config {
     constexpr unsigned long CLRC663_I2C_ADDRESS = 0x28;
 
     constexpr unsigned long OLED_I2C_ADDRESS = 0x3C;
+
+    
 }
