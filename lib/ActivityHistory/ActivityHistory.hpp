@@ -16,6 +16,8 @@ public:
     bool readRecord(size_t index, ActivityRecord &outRecord);
     void clearHistory();
 
+    uint64_t getFromToActivityDuration(uint32_t activityId,uint64_t fromUnixTime,uint64_t toUnixTime);
+
 private:
 
 };
