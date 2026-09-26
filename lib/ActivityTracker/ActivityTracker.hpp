@@ -1,5 +1,5 @@
-#ifndef Activity_TRACKER_H
-#define Activity_TRACKER_H
+#ifndef ACTIVITY_TRACKER_H
+#define ACTIVITY_TRACKER_H
 
 #include <Arduino.h>
 #include <Preferences.h>
@@ -17,9 +17,11 @@ struct ActivityRecord {
     uint64_t stopUnixTime;
 };
 
+inline constexpr const char* HISTORY_PATH = "/history.bin";
+
 class ActivityTracker {
 public:
-    ActivityTracker(const char* binaryPath = "/history.bin");
+    ActivityTracker();
 
     bool begin();
     void updateActivity(uint32_t ActivityId);
@@ -29,23 +31,14 @@ public:
     bool isActivityActive() const;
     uint32_t getCurrentActivityId() const;
     uint64_t getCurrentActivityDuration();
-
-
-    size_t getRecordCount();
-    bool readRecord(size_t index, ActivityRecord &outRecord);
-    void clearHistory();
-    
 private:
     static constexpr uint8_t STOP_TIME_UPDATE_INTERVAL = 60;
-
-    const char* binaryPath;
 
     Preferences preferences;
     ActivityState state;
     uint32_t currentActivityId;
     uint64_t startUnixTime;
     uint64_t lastStopUnixTime;
-
 
     uint64_t getUnixTime();
     void appendRecord(const ActivityRecord &record);

@@ -6,6 +6,8 @@
 #include <NfcReader.hpp>
 #include <DisplayManager.hpp>
 #include <ActivityTracker.hpp>
+#include <ActivityHistory.hpp>
+
 
 #include <esp_rom_crc.h>
 
@@ -13,7 +15,10 @@
 
 NfcReader nfcReader(Config::CLRC663_I2C_ADDRESS);
 DisplayManager displayManager(Config::OLED_I2C_ADDRESS);
+
 ActivityTracker activityTracker;
+ActivityHistory activityHistory;
+
 
 //TODO: Make something on device to configure this.
 const char* ssid     = "*";
@@ -53,6 +58,7 @@ void setup() {
 
     nfcReader.begin(Config::SDA,Config::SCL);
     displayManager.begin();
+
     activityTracker.begin();
 
     setupWIFI();
@@ -103,11 +109,11 @@ void printHistoryCommandHelp() {
 }
 
 void printHistoryCommandDump() {
-    size_t count = activityTracker.getRecordCount();
+    size_t count = activityHistory.getRecordCount();
     Serial.printf("Records: %u (%u bytes each)\n", (unsigned)count, (unsigned)sizeof(ActivityRecord));
     for(size_t i = 0; i < count; i++) {
         ActivityRecord record;
-        if(!activityTracker.readRecord(i, record)) continue;
+        if(!activityHistory.readRecord(i, record)) continue;
         printRecord(i, record);
     }
     Serial.println("Done.");
