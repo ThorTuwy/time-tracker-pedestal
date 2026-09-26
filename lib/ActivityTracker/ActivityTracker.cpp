@@ -14,6 +14,7 @@ bool ActivityTracker::begin() {
     currentActivityId = preferences.getUInt("crtActivityId", 0);
     startUnixTime = preferences.getULong64("startUnixTime", 0);
     uint64_t stopUnixTime = preferences.getULong64("stopUnixTime", 0);
+    lastStopUnixTime = stopUnixTime;
 
     if(state == STATE_ACTIVE){
         ActivityRecord newRecord;
@@ -52,6 +53,7 @@ void ActivityTracker::updateActivity(uint32_t activityId) {
     state = STATE_ACTIVE;
     currentActivityId = activityId;
     startUnixTime = getUnixTime();
+    lastStopUnixTime = startUnixTime;
 
     preferences.putUChar("state", state);
     preferences.putUInt("crtActivityId", currentActivityId);
@@ -61,6 +63,8 @@ void ActivityTracker::updateActivity(uint32_t activityId) {
 
 
 void ActivityTracker::updateStopTime() {
+    if(state != STATE_ACTIVE) return;
+
     if (getUnixTime()-lastStopUnixTime>=STOP_TIME_UPDATE_INTERVAL){
         lastStopUnixTime=getUnixTime();
         preferences.putULong64("stopUnixTime", lastStopUnixTime);

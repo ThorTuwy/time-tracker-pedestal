@@ -106,6 +106,7 @@ void tickMainLogic(){
     if(currentUUID.size()!=0){
         uint32_t uuidHash = ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
         activityTracker.updateActivity(uuidHash);
+        activityTracker.updateStopTime();
         displayManager.showActivityTrackTime("Prueba123",activityTracker.getCurrentActivityDuration());
     }
     else{
