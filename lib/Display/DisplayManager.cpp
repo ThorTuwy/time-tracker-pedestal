@@ -61,7 +61,7 @@ void DisplayManager::showActivityTrackTime(const std::string& activityName,
 }
 
 void DisplayManager::displayAnalogClock(uint32_t hours, uint32_t minutes) {
-    const int16_t clockCenterX = 24;
+    const int16_t clockCenterX = 34;
     const int16_t clockCenterY = 38;
     const int16_t clockRadius = 18;
 
