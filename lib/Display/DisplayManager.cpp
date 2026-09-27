@@ -139,7 +139,7 @@ void DisplayManager::displayActivityName(const std::string& activityName) {
 
     int16_t titleX = (display.width() - textWidth) / 2;
     if(titleX < 0) titleX = 0;
-    display.setCursor(titleX, 2);
+    display.setCursor(titleX, 3);
 
     display.setFont();
     display.setTextSize(1);
