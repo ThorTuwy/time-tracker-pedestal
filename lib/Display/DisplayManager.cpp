@@ -49,11 +49,11 @@ void DisplayManager::showActivityTrackTime(const std::string& activityName,
 
     char timeStr[16];
 
-    display.setCursor(68, 34);
+    display.setCursor(73, 34);
     snprintf(timeStr, sizeof(timeStr), "%02uh", hours);
     display.print(timeStr);
 
-    display.setCursor(68, 52);
+    display.setCursor(73, 52);
     snprintf(timeStr, sizeof(timeStr), "%02um", minutes);
     display.print(timeStr);
 
