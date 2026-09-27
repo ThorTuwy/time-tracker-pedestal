@@ -88,7 +88,7 @@ u32_t lastTickLMainLogic = 0;
 u8_t readRetry = 0;
 std::vector<uint8_t> currentUUID;
 
-DisplayState currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY;
+DisplayState currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
 int lastButtonReading = HIGH;
 int stableButtonState = HIGH;
 u32_t lastButtonChangeTime = 0;
@@ -120,8 +120,10 @@ void tickMainLogic() {
 
     std::vector<uint8_t> readUUID = nfcReader.readTagUUID();
 
-    printUUID("Read UUID   ", readUUID);
-    printUUID("Current UUID", currentUUID);
+    //Not exactly sure why, but seens that if you are constaly priting this things, and you close serial monitor
+    //  spoky behiviur starts to apper, so take that into account when using it.
+    //printUUID("Read UUID   ", readUUID);
+    //printUUID("Current UUID", currentUUID);
 
     if(readUUID.empty() and currentUUID.empty()) {
         return;
