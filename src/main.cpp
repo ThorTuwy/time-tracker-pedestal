@@ -8,6 +8,7 @@
 #include <ActivityTracker.hpp>
 #include <DisplayManager.hpp>
 #include <NfcReader.hpp>
+#include <SerialCommandHandler.hpp>
 
 #include "Config.h"
 
@@ -16,6 +17,7 @@ DisplayManager displayManager(Config::OLED_I2C_ADDRESS);
 
 ActivityTracker activityTracker;
 ActivityHistory activityHistory;
+SerialCommandHandler serialCommandHandler(activityHistory);
 
 // TODO: Make something on device to configure this.
 const char* ssid = "*";
@@ -77,73 +79,6 @@ void printUUID(const char* label, const std::vector<uint8_t>& uuid) {
     Serial.println();
 }
 
-void printRecord(size_t index, const ActivityRecord& record) {
-    struct tm startInfo;
-    struct tm stopInfo;
-    localtime_r((const time_t*)&record.startUnixTime, &startInfo);
-    localtime_r((const time_t*)&record.stopUnixTime, &stopInfo);
-
-    char startText[24];
-    char stopText[24];
-    strftime(startText, sizeof(startText), "%d/%m/%Y %H:%M:%S", &startInfo);
-    strftime(stopText, sizeof(stopText), "%d/%m/%Y %H:%M:%S", &stopInfo);
-
-    uint32_t seconds = (uint32_t)(record.stopUnixTime - record.startUnixTime);
-    Serial.printf("#%u id=0x%08lX  %s -> %s  %02lu:%02lu:%02lu\n",
-                  (unsigned)index, (unsigned long)record.ActivityId, startText,
-                  stopText, (unsigned long)(seconds / 3600),
-                  (unsigned long)((seconds % 3600) / 60),
-                  (unsigned long)(seconds % 60));
-}
-
-void printHistoryCommandHelp() {
-    Serial.println("Commands:");
-    Serial.println("  dump   print all /history.bin records");
-    Serial.println("  help   show this help");
-}
-
-void printHistoryCommandDump() {
-    size_t count = activityHistory.getRecordCount();
-    Serial.printf("Records: %u (%u bytes each)\n", (unsigned)count,
-                  (unsigned)sizeof(ActivityRecord));
-    for(size_t i = 0; i < count; i++) {
-        ActivityRecord record;
-        if(!activityHistory.readRecord(i, record)) continue;
-        printRecord(i, record);
-    }
-    Serial.println("Done.");
-}
-
-void runSerialCommand(const char* command) {
-    if(strcmp(command, "dump") == 0) {
-        printHistoryCommandDump();
-        return;
-    }
-    if(strcmp(command, "help") == 0) {
-        printHistoryCommandHelp();
-        return;
-    }
-    Serial.printf("Unknown command: %s\n", command);
-    printHistoryCommandHelp();
-}
-
-void handleSerialCommands() {
-    static char buffer[16];
-    static size_t length = 0;
-
-    while(Serial.available()) {
-        char c = (char)Serial.read();
-        if(c == '\n' or c == '\r') {
-            if(length == 0) continue;
-            buffer[length] = '\0';
-            runSerialCommand(buffer);
-            length = 0;
-            continue;
-        }
-        if(length < sizeof(buffer) - 1) buffer[length++] = c;
-    }
-}
-
 const u32_t NFC_READER_DELAY = 300;
 const u8_t MAX_READ_RETRY = 3;
 
@@ -195,6 +130,6 @@ void tickMainLogic() {
 }
 
 void loop() {
-    handleSerialCommands();
+    serialCommandHandler.handle();
     tickMainLogic();
 }
