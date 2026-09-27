@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <Fonts/FreeMono9pt7b.h>
 #include <Wire.h>
+#include <string>
 
 enum class DisplayState : uint8_t {
     SHOWING_ACTIVITY_TRACK_TIME = 0,
