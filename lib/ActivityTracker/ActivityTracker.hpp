@@ -2,14 +2,11 @@
 #define ACTIVITY_TRACKER_H
 
 #include <Arduino.h>
-#include <Preferences.h>
 #include <LittleFS.h>
+#include <Preferences.h>
 #include <time.h>
 
-enum ActivityState : uint8_t {
-    STATE_IDLE = 0,
-    STATE_ACTIVE = 1
-};
+enum ActivityState : uint8_t { STATE_IDLE = 0, STATE_ACTIVE = 1 };
 
 struct ActivityRecord {
     uint32_t ActivityId;
@@ -20,7 +17,7 @@ struct ActivityRecord {
 inline constexpr const char* HISTORY_PATH = "/history.bin";
 
 class ActivityTracker {
-public:
+   public:
     ActivityTracker();
 
     bool begin();
@@ -31,7 +28,8 @@ public:
     bool isActivityActive() const;
     uint32_t getCurrentActivityId() const;
     uint64_t getCurrentActivityDuration();
-private:
+
+   private:
     static constexpr uint8_t STOP_TIME_UPDATE_INTERVAL = 60;
 
     Preferences preferences;
@@ -41,7 +39,7 @@ private:
     uint64_t lastStopUnixTime;
 
     uint64_t getUnixTime();
-    void appendRecord(const ActivityRecord &record);
+    void appendRecord(const ActivityRecord& record);
 };
 
 #endif

@@ -1,15 +1,13 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include <SPI.h>
+#include <WiFi.h>
 #include <Wire.h>
-
-#include <NfcReader.hpp>
-#include <DisplayManager.hpp>
-#include <ActivityTracker.hpp>
-#include <ActivityHistory.hpp>
-
-
 #include <esp_rom_crc.h>
+
+#include <ActivityHistory.hpp>
+#include <ActivityTracker.hpp>
+#include <DisplayManager.hpp>
+#include <NfcReader.hpp>
 
 #include "Config.h"
 
@@ -19,44 +17,43 @@ DisplayManager displayManager(Config::OLED_I2C_ADDRESS);
 ActivityTracker activityTracker;
 ActivityHistory activityHistory;
 
-
-//TODO: Make something on device to configure this.
-const char* ssid     = "*";
+// TODO: Make something on device to configure this.
+const char* ssid = "*";
 const char* password = "*";
 
-void setupWIFI(){
+void setupWIFI() {
     Serial.printf("Connecting to %s ", ssid);
     WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
+    while(WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
     Serial.println(" CONNECTED!");
-} 
+}
 
-//TODO: Make something on device to configure this.
-const char* ntpServer = "pool.ntp.org"; 
-const char* timezone = "CET-1CEST,M3.5.0,M10.5.0/3"; 
+// TODO: Make something on device to configure this.
+const char* ntpServer = "pool.ntp.org";
+const char* timezone = "CET-1CEST,M3.5.0,M10.5.0/3";
 
-void setupNTP(){
+void setupNTP() {
     configTzTime(timezone, ntpServer);
 
     Serial.println("Synchronizing with NTP server in Spain...");
     struct tm timeinfo;
-    while (!getLocalTime(&timeinfo)) {
+    while(!getLocalTime(&timeinfo)) {
         Serial.print(".");
         delay(200);
     }
-    
+
     Serial.println("\nTime synchronized successfully!");
 }
 
 void setup() {
     delay(2000);
     Serial.begin(Config::BAUD_RATE);
-    Wire.begin(Config::SDA,Config::SCL);
+    Wire.begin(Config::SDA, Config::SCL);
 
-    nfcReader.begin(Config::SDA,Config::SCL);
+    nfcReader.begin(Config::SDA, Config::SCL);
     displayManager.begin();
 
     activityTracker.begin();
@@ -67,17 +64,15 @@ void setup() {
     displayManager.showMessage("No tag :C\n");
 }
 
-
-
 void printUUID(const char* label, const std::vector<uint8_t>& uuid) {
     Serial.printf("%s: ", label);
-    if (uuid.empty()) {
+    if(uuid.empty()) {
         Serial.println("[empty]");
         return;
     }
-    for (size_t i = 0; i < uuid.size(); i++) {
+    for(size_t i = 0; i < uuid.size(); i++) {
         Serial.printf("%02X", uuid[i]);
-        if (i < uuid.size() - 1) Serial.print(":"); // add separator
+        if(i < uuid.size() - 1) Serial.print(":");  // add separator
     }
     Serial.println();
 }
@@ -95,9 +90,8 @@ void printRecord(size_t index, const ActivityRecord& record) {
 
     uint32_t seconds = (uint32_t)(record.stopUnixTime - record.startUnixTime);
     Serial.printf("#%u id=0x%08lX  %s -> %s  %02lu:%02lu:%02lu\n",
-                  (unsigned)index, (unsigned long)record.ActivityId,
-                  startText, stopText,
-                  (unsigned long)(seconds / 3600),
+                  (unsigned)index, (unsigned long)record.ActivityId, startText,
+                  stopText, (unsigned long)(seconds / 3600),
                   (unsigned long)((seconds % 3600) / 60),
                   (unsigned long)(seconds % 60));
 }
@@ -110,7 +104,8 @@ void printHistoryCommandHelp() {
 
 void printHistoryCommandDump() {
     size_t count = activityHistory.getRecordCount();
-    Serial.printf("Records: %u (%u bytes each)\n", (unsigned)count, (unsigned)sizeof(ActivityRecord));
+    Serial.printf("Records: %u (%u bytes each)\n", (unsigned)count,
+                  (unsigned)sizeof(ActivityRecord));
     for(size_t i = 0; i < count; i++) {
         ActivityRecord record;
         if(!activityHistory.readRecord(i, record)) continue;
@@ -150,48 +145,51 @@ void handleSerialCommands() {
 }
 
 const u32_t NFC_READER_DELAY = 300;
-const u8_t MAX_READ_RETRY=3;
+const u8_t MAX_READ_RETRY = 3;
 
-u32_t lastTickLMainLogic=0;
-u8_t readRetry=0;
+u32_t lastTickLMainLogic = 0;
+u8_t readRetry = 0;
 std::vector<uint8_t> currentUUID;
 
 // NFC reading + Activity tracking +  OLED display
-void tickMainLogic(){
+void tickMainLogic() {
     if(millis() - lastTickLMainLogic < NFC_READER_DELAY) return;
-    lastTickLMainLogic=millis();
-    
+    lastTickLMainLogic = millis();
+
     std::vector<uint8_t> readUUID = nfcReader.readTagUUID();
-    //printUUID("Read UUID   ", readUUID);
-    //printUUID("Current UUID", currentUUID);
-    
-    if(readUUID.empty() and currentUUID.empty()){
+    // printUUID("Read UUID   ", readUUID);
+    // printUUID("Current UUID", currentUUID);
+
+    if(readUUID.empty() and currentUUID.empty()) {
         return;
     }
-    if(readUUID.empty() and !currentUUID.empty() and readRetry<MAX_READ_RETRY){
+    if(readUUID.empty() and !currentUUID.empty() and
+       readRetry < MAX_READ_RETRY) {
         readRetry++;
         return;
     };
-    currentUUID=readUUID;
-    
-    readRetry=0;
+    currentUUID = readUUID;
 
-    if(currentUUID.size()!=0){
-        uint32_t uuidHash = ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
+    readRetry = 0;
+
+    if(currentUUID.size() != 0) {
+        uint32_t uuidHash =
+            ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
         activityTracker.updateActivity(uuidHash);
         activityTracker.updateStopTime();
-        displayManager.showActivityTrackTime("Prueba123",activityTracker.getCurrentActivityDuration());
-    }
-    else{
+        displayManager.showActivityTrackTime(
+            "Prueba123", activityTracker.getCurrentActivityDuration());
+    } else {
         activityTracker.stopActivity();
         struct tm timeinfo;
-        if (!getLocalTime(&timeinfo)) {
+        if(!getLocalTime(&timeinfo)) {
             Serial.println("Failed to obtain time");
             return;
         }
 
         char currentTime[64];
-        strftime(currentTime, sizeof(currentTime), "%d/%m/%Y %H:%M:%S", &timeinfo);
+        strftime(currentTime, sizeof(currentTime), "%d/%m/%Y %H:%M:%S",
+                 &timeinfo);
         displayManager.showMessage(currentTime);
     }
 }

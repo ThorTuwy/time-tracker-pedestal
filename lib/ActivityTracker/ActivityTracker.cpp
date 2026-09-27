@@ -1,21 +1,21 @@
 #include "ActivityTracker.hpp"
 
-ActivityTracker::ActivityTracker(){}
+ActivityTracker::ActivityTracker() {}
 
 bool ActivityTracker::begin() {
-    if (!LittleFS.begin(true)) {
+    if(!LittleFS.begin(true)) {
         return false;
     }
 
     preferences.begin("ev_tracker");
 
-    state = (ActivityState) preferences.getUChar("state", STATE_IDLE);
+    state = (ActivityState)preferences.getUChar("state", STATE_IDLE);
     currentActivityId = preferences.getUInt("crtActivityId", 0);
     startUnixTime = preferences.getULong64("startUnixTime", 0);
     uint64_t stopUnixTime = preferences.getULong64("stopUnixTime", 0);
     lastStopUnixTime = stopUnixTime;
 
-    if(state == STATE_ACTIVE){
+    if(state == STATE_ACTIVE) {
         ActivityRecord newRecord;
         newRecord.ActivityId = currentActivityId;
         newRecord.startUnixTime = startUnixTime;
@@ -45,7 +45,7 @@ void ActivityTracker::stopActivity() {
 }
 
 void ActivityTracker::updateActivity(uint32_t activityId) {
-    if(state==STATE_ACTIVE and activityId==currentActivityId) return;
+    if(state == STATE_ACTIVE and activityId == currentActivityId) return;
 
     stopActivity();
 
@@ -60,20 +60,18 @@ void ActivityTracker::updateActivity(uint32_t activityId) {
     preferences.putULong64("stopUnixTime", startUnixTime);
 }
 
-
 void ActivityTracker::updateStopTime() {
     if(state != STATE_ACTIVE) return;
 
-    if (getUnixTime()-lastStopUnixTime>=STOP_TIME_UPDATE_INTERVAL){
-        lastStopUnixTime=getUnixTime();
+    if(getUnixTime() - lastStopUnixTime >= STOP_TIME_UPDATE_INTERVAL) {
+        lastStopUnixTime = getUnixTime();
         preferences.putULong64("stopUnixTime", lastStopUnixTime);
     }
-
 }
 
-void ActivityTracker::appendRecord(const ActivityRecord &record) {
+void ActivityTracker::appendRecord(const ActivityRecord& record) {
     File file = LittleFS.open(HISTORY_PATH, FILE_APPEND);
-    if (!file) return;
+    if(!file) return;
 
     file.write((const uint8_t*)&record, sizeof(ActivityRecord));
     file.close();
@@ -86,8 +84,10 @@ uint64_t ActivityTracker::getUnixTime() {
 }
 
 bool ActivityTracker::isActivityActive() const { return state == STATE_ACTIVE; }
-uint32_t ActivityTracker::getCurrentActivityId() const { return currentActivityId; }
+uint32_t ActivityTracker::getCurrentActivityId() const {
+    return currentActivityId;
+}
 uint64_t ActivityTracker::getCurrentActivityDuration() {
-    if(state==STATE_IDLE) return 0;
-    return getUnixTime()-startUnixTime;
+    if(state == STATE_IDLE) return 0;
+    return getUnixTime() - startUnixTime;
 }

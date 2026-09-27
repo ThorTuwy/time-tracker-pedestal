@@ -4,19 +4,20 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-#include "CLRC663.h"
-#include <vector>
+
 #include <iterator>
+#include <vector>
+
+#include "CLRC663.h"
 
 class NfcReader {
-public:
+   public:
     CLRC663 reader;
     NfcReader(int i2cAdress);
     bool begin(int sda, int scl);
-    std::vector<uint8_t>  readTagUUID();
+    std::vector<uint8_t> readTagUUID();
 
-private:
-    
+   private:
 };
 
 #endif
