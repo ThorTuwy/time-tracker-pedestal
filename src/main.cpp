@@ -9,6 +9,7 @@
 #include <DisplayManager.hpp>
 #include <NfcReader.hpp>
 #include <SerialCommandHandler.hpp>
+#include <TimeUtils.hpp>
 
 #include "Config.h"
 
@@ -53,6 +54,7 @@ void setupNTP() {
 void setup() {
     delay(2000);
     Serial.begin(Config::BAUD_RATE);
+    pinMode(Config::DISPLAY_BUTTON_PIN, INPUT_PULLUP);
     Wire.begin(Config::SDA, Config::SCL);
 
     nfcReader.begin(Config::SDA, Config::SCL);
@@ -65,7 +67,6 @@ void setup() {
 
     displayManager.showMessage("No tag :C\n");
 }
-
 void printUUID(const char* label, const std::vector<uint8_t>& uuid) {
     Serial.printf("%s: ", label);
     if(uuid.empty()) {
@@ -81,10 +82,36 @@ void printUUID(const char* label, const std::vector<uint8_t>& uuid) {
 
 const u32_t NFC_READER_DELAY = 300;
 const u8_t MAX_READ_RETRY = 3;
+const u32_t DISPLAY_BUTTON_DEBOUNCE = 50;
 
 u32_t lastTickLMainLogic = 0;
 u8_t readRetry = 0;
 std::vector<uint8_t> currentUUID;
+
+DisplayState currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY;
+int lastButtonReading = HIGH;
+int stableButtonState = HIGH;
+u32_t lastButtonChangeTime = 0;
+
+void handleDisplayButton() {
+    int reading = digitalRead(Config::DISPLAY_BUTTON_PIN);
+    if(reading != lastButtonReading) {
+        lastButtonChangeTime = millis();
+        lastButtonReading = reading;
+    }
+
+    if(millis() - lastButtonChangeTime < DISPLAY_BUTTON_DEBOUNCE) return;
+    if(reading == stableButtonState) return;
+
+    stableButtonState = reading;
+    if(stableButtonState == LOW) {
+        if(currentDisplayState == DisplayState::SHOWING_ACTIVITY_TRACK_TIME) {
+            currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY;
+        } else {
+            currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
+        }
+    }
+}
 
 // NFC reading + Activity tracking +  OLED display
 void tickMainLogic() {
@@ -92,8 +119,9 @@ void tickMainLogic() {
     lastTickLMainLogic = millis();
 
     std::vector<uint8_t> readUUID = nfcReader.readTagUUID();
-    // printUUID("Read UUID   ", readUUID);
-    // printUUID("Current UUID", currentUUID);
+
+    printUUID("Read UUID   ", readUUID);
+    printUUID("Current UUID", currentUUID);
 
     if(readUUID.empty() and currentUUID.empty()) {
         return;
@@ -112,8 +140,39 @@ void tickMainLogic() {
             ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
         activityTracker.updateActivity(uuidHash);
         activityTracker.updateStopTime();
-        displayManager.showActivityTrackTime(
-            "Prueba123", activityTracker.getCurrentActivityDuration());
+
+        switch(currentDisplayState) {
+            case DisplayState::SHOWING_ACTIVITY_TRACK_TIME: {
+                displayManager.showActivityTrackTime(
+                    "Prueba123", activityTracker.getCurrentActivityDuration());
+                break;
+            }
+            case DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY: {
+                time_t currentUnixTime;
+                time(&currentUnixTime);
+
+                time_t startWeekUnixTime =
+                    TimeUtils::getStartOfWeekUnixTime(currentUnixTime);
+                time_t startMonthUnixTime =
+                    TimeUtils::getStartOfMonthUnixTime(currentUnixTime);
+
+                uint64_t weekActivityDuration =
+                    activityTracker.getCurrentActivityDuration() +
+                    activityHistory.getFromToActivityDuration(
+                        uuidHash, startWeekUnixTime, currentUnixTime);
+
+                uint64_t monthActivityDuration =
+                    activityTracker.getCurrentActivityDuration() +
+                    activityHistory.getFromToActivityDuration(
+                        uuidHash, startMonthUnixTime, currentUnixTime);
+
+                displayManager.showActivityTrackSummary(
+                    "Prueba123", weekActivityDuration, monthActivityDuration);
+                break;
+            }
+            default:
+                break;
+        }
     } else {
         activityTracker.stopActivity();
         struct tm timeinfo;
@@ -130,6 +189,7 @@ void tickMainLogic() {
 }
 
 void loop() {
+    handleDisplayButton();
     serialCommandHandler.handle();
     tickMainLogic();
 }

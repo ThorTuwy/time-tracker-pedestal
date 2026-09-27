@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <Fonts/FreeMono9pt7b.h>
 #include <Wire.h>
+
 #include <string>
 
 enum class DisplayState : uint8_t {
@@ -22,6 +23,10 @@ class DisplayManager {
     void showActivityTrackTime(const std::string& activityName,
                                const uint64_t activityDuration);
 
+    void showActivityTrackSummary(const std::string& activityName,
+                                  const uint64_t activityWeekDuration,
+                                  const uint64_t activityMonthDuration);
+
     void showMessage(const std::string& msg);
     void clear();
 
@@ -30,6 +35,7 @@ class DisplayManager {
     static constexpr uint8_t SCREEN_HEIGHT = 64;
     static constexpr int8_t OLED_RESET = -1;
 
+    void setupNewShow();
     void displayActivityName(const std::string& activityName);
     void displayAnalogClock(uint32_t hours, uint32_t minutes);
 
@@ -37,7 +43,13 @@ class DisplayManager {
     Adafruit_SSD1306 display;
 
     std::string activityName;
-    uint64_t lastActivityDuration;
+
+    DisplayState lastShowState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
+
+    uint64_t lastActivityDuration = 0;
+
+    uint64_t lastActivityWeekDuration = 0;
+    uint64_t lastActivityMonthDuration = 0;
 };
 
 #endif

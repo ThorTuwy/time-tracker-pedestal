@@ -38,7 +38,8 @@ class ActivityTracker {
     uint64_t startUnixTime;
     uint64_t lastStopUnixTime;
 
-    uint64_t getUnixTime();
+    uint64_t getUnixTime();  // TODO: Remove
+
     void appendRecord(const ActivityRecord& record);
 };
 

@@ -16,6 +16,14 @@ bool DisplayManager::begin() {
     return true;
 }
 
+void DisplayManager::setupNewShow() {
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setFont();
+
+    display.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);
+}
+
 void DisplayManager::showActivityTrackTime(const std::string& activityName,
                                            const uint64_t activityDuration) {
     uint32_t hours = (activityDuration / 3600);
@@ -25,22 +33,20 @@ void DisplayManager::showActivityTrackTime(const std::string& activityName,
     uint32_t prevMinutes = (lastActivityDuration % 3600) / 60;
 
     if((hours == prevHours and minutes == prevMinutes) and
-       lastActivityDuration != 0)
+       lastActivityDuration != 0 and
+       lastShowState == DisplayState::SHOWING_ACTIVITY_TRACK_TIME)
         return;
     lastActivityDuration = activityDuration;
+    lastShowState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
 
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextSize(1);
-    display.setFont();
-
-    display.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);
+    setupNewShow();
 
     displayActivityName(activityName);
     displayAnalogClock(hours, minutes);
 
     display.setTextSize(1);
     display.setFont(&FreeMono9pt7b);
+
     char timeStr[16];
 
     display.setCursor(68, 34);
@@ -88,6 +94,43 @@ void DisplayManager::displayAnalogClock(uint32_t hours, uint32_t minutes) {
     display.drawLine(clockCenterX, clockCenterY, hourX, hourY, SSD1306_WHITE);
 }
 
+void DisplayManager::showActivityTrackSummary(
+    const std::string& activityName, const uint64_t activityWeekDuration,
+    const uint64_t activityMonthDuration) {
+    uint32_t weekHours = (activityWeekDuration / 3600);
+    uint32_t monthHours = (activityMonthDuration / 3600);
+
+    uint32_t prevWeekHours = (lastActivityWeekDuration / 3600);
+    uint32_t prevMonthHours = (lastActivityMonthDuration / 3600);
+
+    if((weekHours == prevWeekHours and monthHours == prevMonthHours) and
+       lastActivityWeekDuration != 0 and lastActivityMonthDuration != 0 and
+       lastShowState == DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY)
+        return;
+
+    lastActivityWeekDuration = activityWeekDuration;
+    lastActivityMonthDuration = activityMonthDuration;
+    lastShowState = DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY;
+
+    setupNewShow();
+
+    displayActivityName(activityName);
+
+    display.setFont(&FreeMono9pt7b);
+    display.setTextSize(1);
+    char timeStr[16];
+
+    display.setCursor(10, 33);
+    snprintf(timeStr, sizeof(timeStr), "Week:  %02uh", weekHours);
+    display.print(timeStr);
+
+    display.setCursor(10, 51);
+    snprintf(timeStr, sizeof(timeStr), "Month: %02uh", monthHours);
+    display.print(timeStr);
+
+    display.display();
+}
+
 void DisplayManager::displayActivityName(const std::string& activityName) {
     int16_t x1, y1;
     uint16_t textWidth, textHeight;
@@ -97,6 +140,9 @@ void DisplayManager::displayActivityName(const std::string& activityName) {
     int16_t titleX = (display.width() - textWidth) / 2;
     if(titleX < 0) titleX = 0;
     display.setCursor(titleX, 2);
+
+    display.setFont();
+    display.setTextSize(1);
     display.print(activityName.c_str());
 
     display.drawFastHLine(0, 13, display.width(), SSD1306_WHITE);
@@ -104,6 +150,9 @@ void DisplayManager::displayActivityName(const std::string& activityName) {
 
 void DisplayManager::showMessage(const std::string& msg) {
     lastActivityDuration = 0;
+    lastActivityWeekDuration = 0;
+    lastActivityMonthDuration = 0;
+
     display.clearDisplay();
 
     display.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);

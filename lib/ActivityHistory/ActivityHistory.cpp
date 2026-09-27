@@ -57,6 +57,8 @@ uint64_t ActivityHistory::getFromToActivityDuration(uint32_t activityId,
         activityDuration +=
             currentRecord.stopUnixTime - currentRecord.startUnixTime;
     }
+
+    return activityDuration;
 }
 
 void ActivityHistory::clearHistory() { LittleFS.remove(HISTORY_PATH); }
