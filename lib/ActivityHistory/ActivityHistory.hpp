@@ -8,7 +8,7 @@ struct ActivityRecord {
     uint32_t ActivityId;
     uint64_t startUnixTime;
     uint64_t stopUnixTime;
-};
+}  __attribute__((packed));
 
 namespace ActivityHistory {
     inline constexpr const char* HISTORY_PATH = "/history.bin";
