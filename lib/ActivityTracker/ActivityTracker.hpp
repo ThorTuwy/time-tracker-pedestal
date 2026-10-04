@@ -21,7 +21,7 @@ class ActivityTracker {
    private:
     static constexpr uint8_t STOP_TIME_UPDATE_INTERVAL = 60;
 
-    Preferences preferences;
+    Preferences trackerPreferences;
     ActivityState state;
     uint32_t currentActivityId;
     uint64_t startUnixTime;

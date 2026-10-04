@@ -11,12 +11,12 @@ bool ActivityTracker::begin() {
         return false;
     }
 
-    preferences.begin("ev_tracker");
+    trackerPreferences.begin("ev_tracker");
 
-    state = (ActivityState)preferences.getUChar("state", STATE_IDLE);
-    currentActivityId = preferences.getUInt("crtActivityId", 0);
-    startUnixTime = preferences.getULong64("startUnixTime", 0);
-    uint64_t stopUnixTime = preferences.getULong64("stopUnixTime", 0);
+    state = (ActivityState)trackerPreferences.getUChar("state", STATE_IDLE);
+    currentActivityId = trackerPreferences.getUInt("crtActivityId", 0);
+    startUnixTime = trackerPreferences.getULong64("startUnixTime", 0);
+    uint64_t stopUnixTime = trackerPreferences.getULong64("stopUnixTime", 0);
     lastStopUnixTime = stopUnixTime;
 
     if(state == STATE_ACTIVE) {
@@ -28,7 +28,7 @@ bool ActivityTracker::begin() {
         ActivityHistory::appendRecord(newRecord);
 
         state = STATE_IDLE;
-        preferences.putUChar("state", state);
+        trackerPreferences.putUChar("state", state);
     }
 
     return true;
@@ -45,7 +45,7 @@ void ActivityTracker::stopActivity() {
     ActivityHistory::appendRecord(newRecord);
 
     state = STATE_IDLE;
-    preferences.putUChar("state", state);
+    trackerPreferences.putUChar("state", state);
 }
 
 void ActivityTracker::updateActivity(uint32_t activityId) {
@@ -61,10 +61,10 @@ void ActivityTracker::updateActivity(uint32_t activityId) {
     startUnixTime = getUnixTime();
     lastStopUnixTime = startUnixTime;
 
-    preferences.putUChar("state", state);
-    preferences.putUInt("crtActivityId", currentActivityId);
-    preferences.putULong64("startUnixTime", startUnixTime);
-    preferences.putULong64("stopUnixTime", startUnixTime);
+    trackerPreferences.putUChar("state", state);
+    trackerPreferences.putUInt("crtActivityId", currentActivityId);
+    trackerPreferences.putULong64("startUnixTime", startUnixTime);
+    trackerPreferences.putULong64("stopUnixTime", startUnixTime);
 }
 
 void ActivityTracker::updateStopTime() {
@@ -72,7 +72,7 @@ void ActivityTracker::updateStopTime() {
 
     if(getUnixTime() - lastStopUnixTime >= STOP_TIME_UPDATE_INTERVAL) {
         lastStopUnixTime = getUnixTime();
-        preferences.putULong64("stopUnixTime", lastStopUnixTime);
+        trackerPreferences.putULong64("stopUnixTime", lastStopUnixTime);
     }
 }
 
