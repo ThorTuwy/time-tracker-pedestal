@@ -1,16 +1,11 @@
 #include "ActivityTracker.hpp"
 
 #include <ActivityHistory.hpp>
-#include <LittleFS.h>
 #include <time.h>
 
 ActivityTracker::ActivityTracker() {}
 
 bool ActivityTracker::begin() {
-    if(!LittleFS.begin(true)) {
-        return false;
-    }
-
     trackerPreferences.begin("ev_tracker");
 
     state = (ActivityState)trackerPreferences.getUChar("state", STATE_IDLE);

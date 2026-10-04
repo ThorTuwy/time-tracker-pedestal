@@ -59,6 +59,7 @@ void setup() {
     nfcReader.begin(Config::SDA, Config::SCL);
     displayManager.begin();
 
+    ActivityHistory::begin();
     activityTracker.begin();
 
     setupWIFI();

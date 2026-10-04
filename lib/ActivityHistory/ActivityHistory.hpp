@@ -2,6 +2,7 @@
 #define ACTIVITY_HISTORY_H
 
 #include <Arduino.h>
+#include <Preferences.h>
 
 struct ActivityRecord {
     uint32_t ActivityId;
@@ -11,7 +12,14 @@ struct ActivityRecord {
 
 namespace ActivityHistory {
     inline constexpr const char* HISTORY_PATH = "/history.bin";
+    //Buffer idea, is to record activitys for atleast one month
+    inline constexpr const u32_t CIRCULAR_BUFFER_RECORD_SIZE = 31*100;
 
+
+    extern Preferences historyPreferences;
+    extern u32_t nextRecordPosition;
+
+    bool begin();
     size_t getRecordCount();
     void appendRecord(const ActivityRecord& record);
     bool readRecord(size_t index, ActivityRecord& outRecord);

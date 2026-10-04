@@ -4,6 +4,27 @@
 
 namespace ActivityHistory {
 
+Preferences historyPreferences;
+u32_t nextRecordPosition = 0;
+
+bool begin() {
+    bool filesystemInitialized = LittleFS.begin(true);
+    if(!filesystemInitialized) return false;
+
+    bool preferencesInitialized = historyPreferences.begin("activityHistory");
+    if(!preferencesInitialized) return false;
+
+    nextRecordPosition = historyPreferences.getUInt("nextPosition", 0) %
+                         CIRCULAR_BUFFER_RECORD_SIZE;
+
+    if(!LittleFS.exists(HISTORY_PATH)) {
+        nextRecordPosition = 0;
+        historyPreferences.putUInt("nextPosition", nextRecordPosition);
+    }
+
+    return true;
+}
+
 size_t getRecordCount() {
     File file = LittleFS.open(HISTORY_PATH, FILE_READ);
     if(!file) return 0;
@@ -13,21 +34,46 @@ size_t getRecordCount() {
 }
 
 void appendRecord(const ActivityRecord& record) {
-    File file = LittleFS.open(HISTORY_PATH, FILE_APPEND);
+    if(!LittleFS.exists(HISTORY_PATH)) {
+        File newFile = LittleFS.open(HISTORY_PATH, FILE_WRITE);
+        if(!newFile) return;
+        newFile.close();
+    }
+
+    File file = LittleFS.open(HISTORY_PATH, "r+");
     if(!file) return;
 
-    file.write((const uint8_t*)&record, sizeof(ActivityRecord));
+    size_t offset = nextRecordPosition * sizeof(ActivityRecord);
+    if(!file.seek(offset)) {
+        file.close();
+        return;
+    }
+
+    size_t bytesWritten =
+        file.write((const uint8_t*)&record, sizeof(ActivityRecord));
     file.close();
+    if(bytesWritten != sizeof(ActivityRecord)) return;
+
+    nextRecordPosition = (nextRecordPosition + 1) % CIRCULAR_BUFFER_RECORD_SIZE;
+    historyPreferences.putUInt("nextPosition", nextRecordPosition);
 }
 
 bool readRecord(size_t index, ActivityRecord& outRecord) {
+    if(index >= CIRCULAR_BUFFER_RECORD_SIZE) return false;
+
     File file = LittleFS.open(HISTORY_PATH, FILE_READ);
     if(!file) return false;
 
     size_t offset = index * sizeof(ActivityRecord);
     if(offset + sizeof(ActivityRecord) > file.size()) {
+        // We are transparent in the implementation the circular buffer
+        // Soo positions that do not relly exist, but could exist return
+        // correctly but empty
         file.close();
-        return false;
+        outRecord.ActivityId = 0;
+        outRecord.startUnixTime = 0;
+        outRecord.stopUnixTime = 0;
+        return true;
     }
 
     file.seek(offset);
@@ -37,8 +83,7 @@ bool readRecord(size_t index, ActivityRecord& outRecord) {
     return bytesRead == sizeof(ActivityRecord);
 }
 
-uint64_t getFromToActivityDuration(uint32_t activityId,
-                                   uint64_t fromUnixTime,
+uint64_t getFromToActivityDuration(uint32_t activityId, uint64_t fromUnixTime,
                                    uint64_t toUnixTime) {
     uint64_t activityDuration = 0;
 
@@ -71,5 +116,9 @@ uint64_t getFromToActivityDuration(uint32_t activityId,
     return activityDuration;
 }
 
-void clearHistory() { LittleFS.remove(HISTORY_PATH); }
+void clearHistory() {
+    LittleFS.remove(HISTORY_PATH);
+    nextRecordPosition = 0;
+    historyPreferences.putUInt("nextPosition", nextRecordPosition);
 }
+}  // namespace ActivityHistory
