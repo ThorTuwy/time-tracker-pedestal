@@ -1,8 +1,8 @@
 #include "ActivityHistory.hpp"
 
-ActivityHistory::ActivityHistory() {}
+namespace ActivityHistory {
 
-size_t ActivityHistory::getRecordCount() {
+size_t getRecordCount() {
     File file = LittleFS.open(HISTORY_PATH, FILE_READ);
     if(!file) return 0;
     size_t count = file.size() / sizeof(ActivityRecord);
@@ -10,7 +10,7 @@ size_t ActivityHistory::getRecordCount() {
     return count;
 }
 
-bool ActivityHistory::readRecord(size_t index, ActivityRecord& outRecord) {
+bool readRecord(size_t index, ActivityRecord& outRecord) {
     File file = LittleFS.open(HISTORY_PATH, FILE_READ);
     if(!file) return false;
 
@@ -27,9 +27,9 @@ bool ActivityHistory::readRecord(size_t index, ActivityRecord& outRecord) {
     return bytesRead == sizeof(ActivityRecord);
 }
 
-uint64_t ActivityHistory::getFromToActivityDuration(uint32_t activityId,
-                                                    uint64_t fromUnixTime,
-                                                    uint64_t toUnixTime) {
+uint64_t getFromToActivityDuration(uint32_t activityId,
+                                   uint64_t fromUnixTime,
+                                   uint64_t toUnixTime) {
     uint64_t activityDuration = 0;
 
     File file = LittleFS.open(HISTORY_PATH, FILE_READ);
@@ -61,4 +61,5 @@ uint64_t ActivityHistory::getFromToActivityDuration(uint32_t activityId,
     return activityDuration;
 }
 
-void ActivityHistory::clearHistory() { LittleFS.remove(HISTORY_PATH); }
+void clearHistory() { LittleFS.remove(HISTORY_PATH); }
+}

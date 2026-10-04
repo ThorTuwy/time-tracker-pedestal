@@ -17,8 +17,7 @@ NfcReader nfcReader(Config::CLRC663_I2C_ADDRESS);
 DisplayManager displayManager(Config::OLED_I2C_ADDRESS);
 
 ActivityTracker activityTracker;
-ActivityHistory activityHistory;
-SerialCommandHandler serialCommandHandler(activityHistory);
+SerialCommandHandler serialCommandHandler;
 
 // TODO: Make something on device to configure this.
 const char* ssid = "*";
@@ -159,12 +158,12 @@ void tickMainLogic() {
 
                 uint64_t weekActivityDuration =
                     activityTracker.getCurrentActivityDuration() +
-                    activityHistory.getFromToActivityDuration(
+                    ActivityHistory::getFromToActivityDuration(
                         uuidHash, startWeekUnixTime, currentUnixTime);
 
                 uint64_t monthActivityDuration =
                     activityTracker.getCurrentActivityDuration() +
-                    activityHistory.getFromToActivityDuration(
+                    ActivityHistory::getFromToActivityDuration(
                         uuidHash, startMonthUnixTime, currentUnixTime);
 
                 displayManager.showActivityTrackSummary(

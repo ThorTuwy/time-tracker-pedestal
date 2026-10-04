@@ -7,13 +7,12 @@
 
 class SerialCommandHandler {
    public:
-    SerialCommandHandler(ActivityHistory& activityHistory);
+    SerialCommandHandler();
     void handle();
 
    private:
     static constexpr size_t COMMAND_BUFFER_SIZE = 16;
 
-    ActivityHistory& activityHistory;
     char buffer[COMMAND_BUFFER_SIZE];
     size_t length;
 

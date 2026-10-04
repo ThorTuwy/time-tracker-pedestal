@@ -8,10 +8,7 @@
 
 #include <ActivityTracker.hpp>
 
-class ActivityHistory {
-   public:
-    ActivityHistory();
-
+namespace ActivityHistory {
     size_t getRecordCount();
     bool readRecord(size_t index, ActivityRecord& outRecord);
     void clearHistory();
@@ -19,8 +16,6 @@ class ActivityHistory {
     uint64_t getFromToActivityDuration(uint32_t activityId,
                                        uint64_t fromUnixTime,
                                        uint64_t toUnixTime);
-
-   private:
-};
+}
 
 #endif

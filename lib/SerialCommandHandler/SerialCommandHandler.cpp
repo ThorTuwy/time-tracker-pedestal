@@ -2,8 +2,7 @@
 
 #include <string.h>
 
-SerialCommandHandler::SerialCommandHandler(ActivityHistory& activityHistory)
-    : activityHistory(activityHistory), buffer{}, length(0) {}
+SerialCommandHandler::SerialCommandHandler() : buffer{}, length(0) {}
 
 void SerialCommandHandler::handle() {
     while(Serial.available()) {
@@ -39,12 +38,12 @@ void SerialCommandHandler::printHelp() {
 }
 
 void SerialCommandHandler::printHistory() {
-    size_t count = activityHistory.getRecordCount();
+    size_t count = ActivityHistory::getRecordCount();
     Serial.printf("Records: %u (%u bytes each)\n", (unsigned)count,
                   (unsigned)sizeof(ActivityRecord));
     for(size_t i = 0; i < count; i++) {
         ActivityRecord record;
-        if(!activityHistory.readRecord(i, record)) continue;
+        if(!ActivityHistory::readRecord(i, record)) continue;
         printRecord(i, record);
     }
     Serial.println("Done.");
