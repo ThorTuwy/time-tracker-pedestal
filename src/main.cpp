@@ -141,7 +141,6 @@ void tickMainLogic() {
         uint32_t uuidHash =
             ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
         activityTracker.updateActivity(uuidHash);
-        activityTracker.updateStopTime();
 
         switch(currentDisplayState) {
             case DisplayState::SHOWING_ACTIVITY_TRACK_TIME: {

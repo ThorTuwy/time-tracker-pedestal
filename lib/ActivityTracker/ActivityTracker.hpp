@@ -23,7 +23,6 @@ class ActivityTracker {
     bool begin();
     void updateActivity(uint32_t ActivityId);
     void stopActivity();
-    void updateStopTime();
 
     bool isActivityActive() const;
     uint32_t getCurrentActivityId() const;
@@ -39,6 +38,8 @@ class ActivityTracker {
     uint64_t lastStopUnixTime;
 
     uint64_t getUnixTime();  // TODO: Remove
+
+    void updateStopTime();
 
     void appendRecord(const ActivityRecord& record);
 };

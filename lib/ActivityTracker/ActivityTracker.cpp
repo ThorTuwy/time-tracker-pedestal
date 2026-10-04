@@ -45,7 +45,10 @@ void ActivityTracker::stopActivity() {
 }
 
 void ActivityTracker::updateActivity(uint32_t activityId) {
-    if(state == STATE_ACTIVE and activityId == currentActivityId) return;
+    if(state == STATE_ACTIVE and activityId == currentActivityId){
+        updateStopTime();
+        return;
+    };
 
     stopActivity();
 
