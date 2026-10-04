@@ -1,5 +1,7 @@
 #include "ActivityHistory.hpp"
 
+#include <LittleFS.h>
+
 namespace ActivityHistory {
 
 size_t getRecordCount() {
@@ -8,6 +10,14 @@ size_t getRecordCount() {
     size_t count = file.size() / sizeof(ActivityRecord);
     file.close();
     return count;
+}
+
+void appendRecord(const ActivityRecord& record) {
+    File file = LittleFS.open(HISTORY_PATH, FILE_APPEND);
+    if(!file) return;
+
+    file.write((const uint8_t*)&record, sizeof(ActivityRecord));
+    file.close();
 }
 
 bool readRecord(size_t index, ActivityRecord& outRecord) {

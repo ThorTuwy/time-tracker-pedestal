@@ -1,5 +1,9 @@
 #include "ActivityTracker.hpp"
 
+#include <ActivityHistory.hpp>
+#include <LittleFS.h>
+#include <time.h>
+
 ActivityTracker::ActivityTracker() {}
 
 bool ActivityTracker::begin() {
@@ -21,7 +25,7 @@ bool ActivityTracker::begin() {
         newRecord.startUnixTime = startUnixTime;
         newRecord.stopUnixTime = stopUnixTime;
 
-        appendRecord(newRecord);
+        ActivityHistory::appendRecord(newRecord);
 
         state = STATE_IDLE;
         preferences.putUChar("state", state);
@@ -38,7 +42,7 @@ void ActivityTracker::stopActivity() {
     newRecord.startUnixTime = startUnixTime;
     newRecord.stopUnixTime = getUnixTime();
 
-    appendRecord(newRecord);
+    ActivityHistory::appendRecord(newRecord);
 
     state = STATE_IDLE;
     preferences.putUChar("state", state);
@@ -70,14 +74,6 @@ void ActivityTracker::updateStopTime() {
         lastStopUnixTime = getUnixTime();
         preferences.putULong64("stopUnixTime", lastStopUnixTime);
     }
-}
-
-void ActivityTracker::appendRecord(const ActivityRecord& record) {
-    File file = LittleFS.open(HISTORY_PATH, FILE_APPEND);
-    if(!file) return;
-
-    file.write((const uint8_t*)&record, sizeof(ActivityRecord));
-    file.close();
 }
 
 uint64_t ActivityTracker::getUnixTime() {

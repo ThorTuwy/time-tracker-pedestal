@@ -2,14 +2,18 @@
 #define ACTIVITY_HISTORY_H
 
 #include <Arduino.h>
-#include <LittleFS.h>
-#include <Preferences.h>
-#include <time.h>
 
-#include <ActivityTracker.hpp>
+struct ActivityRecord {
+    uint32_t ActivityId;
+    uint64_t startUnixTime;
+    uint64_t stopUnixTime;
+};
 
 namespace ActivityHistory {
+    inline constexpr const char* HISTORY_PATH = "/history.bin";
+
     size_t getRecordCount();
+    void appendRecord(const ActivityRecord& record);
     bool readRecord(size_t index, ActivityRecord& outRecord);
     void clearHistory();
 

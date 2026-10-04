@@ -2,19 +2,9 @@
 #define ACTIVITY_TRACKER_H
 
 #include <Arduino.h>
-#include <LittleFS.h>
 #include <Preferences.h>
-#include <time.h>
 
 enum ActivityState : uint8_t { STATE_IDLE = 0, STATE_ACTIVE = 1 };
-
-struct ActivityRecord {
-    uint32_t ActivityId;
-    uint64_t startUnixTime;
-    uint64_t stopUnixTime;
-};
-
-inline constexpr const char* HISTORY_PATH = "/history.bin";
 
 class ActivityTracker {
    public:
@@ -40,8 +30,6 @@ class ActivityTracker {
     uint64_t getUnixTime();  // TODO: Remove
 
     void updateStopTime();
-
-    void appendRecord(const ActivityRecord& record);
 };
 
 #endif
