@@ -10,6 +10,8 @@
 #include <NfcReader.hpp>
 #include <SerialCommandHandler.hpp>
 #include <TimeUtils.hpp>
+#include <LittleFS.h>
+#include <ESPAsyncWebServer.h>
 
 #include "Config.h"
 
@@ -50,6 +52,8 @@ void setupNTP() {
     Serial.println("\nTime synchronized successfully!");
 }
 
+AsyncWebServer server(80);
+
 void setup() {
     delay(2000);
     Serial.begin(Config::BAUD_RATE);
@@ -64,6 +68,11 @@ void setup() {
 
     setupWIFI();
     setupNTP();
+
+    ActivityHistory::clearHistory();
+
+    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+    server.begin();
 
     displayManager.showMessage("No tag :C\n");
 }
