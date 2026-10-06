@@ -7,6 +7,7 @@
 #include <ActivityHistory.hpp>
 #include <ActivityTracker.hpp>
 #include <DisplayManager.hpp>
+#include <NameRegister.hpp>
 #include <NfcReader.hpp>
 #include <SerialCommandHandler.hpp>
 #include <TimeUtils.hpp>
@@ -64,6 +65,7 @@ void setup() {
     displayManager.begin();
 
     ActivityHistory::begin();
+    NameRegister::begin();
     activityTracker.begin();
 
     setupWIFI();
@@ -151,10 +153,23 @@ void tickMainLogic() {
             ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
         activityTracker.updateActivity(uuidHash);
 
+        ActivityNameRecord activityNameRecord;
+        if(!NameRegister::searchRecord(uuidHash,activityNameRecord)){
+            ActivityNameRecord newActivityNameRecord = {
+                uuidHash,
+                "CHANGE_ME_IN_THE_WEB",
+                0,
+                0,
+                0,
+            };
+            NameRegister::addRecord(newActivityNameRecord);
+            activityNameRecord=newActivityNameRecord;
+        }
+
         switch(currentDisplayState) {
             case DisplayState::SHOWING_ACTIVITY_TRACK_TIME: {
                 displayManager.showActivityTrackTime(
-                    "Prueba123", activityTracker.getCurrentActivityDuration());
+                    activityNameRecord.name, activityTracker.getCurrentActivityDuration());
                 break;
             }
             case DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY: {
@@ -177,7 +192,7 @@ void tickMainLogic() {
                         uuidHash, startMonthUnixTime, currentUnixTime);
 
                 displayManager.showActivityTrackSummary(
-                    "Prueba123", weekActivityDuration, monthActivityDuration);
+                    activityNameRecord.name, weekActivityDuration, monthActivityDuration);
                 break;
             }
             default:
