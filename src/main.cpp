@@ -8,6 +8,7 @@
 #include <ActivityTracker.hpp>
 #include <DisplayManager.hpp>
 #include <NameRegister.hpp>
+#include <NameRegisterApi.hpp>
 #include <NfcReader.hpp>
 #include <SerialCommandHandler.hpp>
 #include <TimeUtils.hpp>
@@ -74,6 +75,7 @@ void setup() {
     ActivityHistory::clearHistory();
 
     server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+    NameRegisterApi::begin(server);
     server.begin();
 
     displayManager.showMessage("No tag :C\n");

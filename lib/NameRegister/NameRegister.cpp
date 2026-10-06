@@ -71,6 +71,21 @@ bool replaceRecord(uint32_t id, const ActivityNameRecord& record) {
     return false;
 }
 
+bool replaceRegister(const uint8_t* data, size_t length) {
+    if(length % sizeof(ActivityNameRecord) != 0 or
+       (length != 0 and data == nullptr)) {
+        return false;
+    }
+
+    File file = LittleFS.open(REGISTER_PATH, FILE_WRITE);
+    if(!file) return false;
+
+    size_t bytesWritten = 0;
+    if(length != 0) bytesWritten = file.write(data, length);
+    file.close();
+    return bytesWritten == length;
+}
+
 bool deleteRecord(uint32_t id) {
     if(id == 0) return false;
 
