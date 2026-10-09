@@ -45,11 +45,17 @@ class DisplayManager {
     bool begin();
 
     void showActivityTrackTime(const std::string& activityName,
-                               const uint64_t activityDuration);
+                               const uint64_t activityDuration,
+                               bool forceUpdate = false);
 
     void showActivityTrackSummary(const std::string& activityName,
                                   const uint64_t activityWeekDuration,
-                                  const uint64_t activityMonthDuration);
+                                  const uint64_t activityMonthDuration,
+                                  bool forceUpdate = false);
+
+    void showCurrentTime(const std::string& currentTime,
+                         bool forceUpdate = false);
+    void showQRCode(const std::string& qrCode, bool forceUpdate = false);
 
     void showMessage(const std::string& msg);
     void clear();
@@ -60,6 +66,8 @@ class DisplayManager {
     static constexpr int8_t OLED_RESET = -1;
 
     void setupNewShow();
+    void showIdleText(DisplayStateIdle state, const std::string& text,
+                      bool forceUpdate);
     void displayActivityName(const std::string& activityName);
     void displayAnalogClock(uint32_t hours, uint32_t minutes);
 
@@ -67,8 +75,6 @@ class DisplayManager {
     Adafruit_SSD1306 display;
 
     std::string activityName;
-
-    DisplayStateActive lastShowState = DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
 
     uint64_t lastActivityDuration = 0;
 

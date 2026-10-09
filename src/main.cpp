@@ -6,6 +6,7 @@
 
 #include <ActivityHistory.hpp>
 #include <ActivityTracker.hpp>
+#include <DebugUtils.hpp>
 #include <DisplayManager.hpp>
 #include <NameRegister.hpp>
 #include <NfcReader.hpp>
@@ -72,36 +73,18 @@ void setup() {
 
     displayManager.showMessage("No tag :C\n");
 }
-void printUUID(const char* label, const std::vector<uint8_t>& uuid) {
-    Serial.printf("%s: ", label);
-    if(uuid.empty()) {
-        Serial.println("[empty]");
-        return;
-    }
-    for(size_t i = 0; i < uuid.size(); i++) {
-        Serial.printf("%02X", uuid[i]);
-        if(i < uuid.size() - 1) Serial.print(":");  // add separator
-    }
-    Serial.println();
-}
+DisplayStateActive currentDisplayState =
+    DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
+DisplayStateIdle currentIdleDisplayState =
+    DisplayStateIdle::SHOWING_CURRENT_TIME;
 
-const u32_t NFC_READER_DELAY = 300;
-const u8_t MAX_READ_RETRY = 3;
-const u32_t DISPLAY_BUTTON_DEBOUNCE = 50;
+uint32_t activityId;
+bool forceDisplayUpdate = false;
 
-u32_t lastTickLMainLogic = 0;
-u8_t readRetry = 0;
-std::vector<uint8_t> currentUUID;
-
-DisplayStateActive currentDisplayState = DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
-DisplayStateIdle currentIdleDisplayState = DisplayStateIdle::SHOWING_CURRENT_TIME;
-DisplayStateIdle lastIdleDisplayState = DisplayStateIdle::SHOWING_QR_CODE;
-std::string lastIdleDisplayMessage;
-bool idleDisplayDirty = true;
 int lastButtonReading = HIGH;
 int stableButtonState = HIGH;
 u32_t lastButtonChangeTime = 0;
-
+const u32_t DISPLAY_BUTTON_DEBOUNCE = 50;
 void handleDisplayButton() {
     int reading = digitalRead(Config::DISPLAY_BUTTON_PIN);
     if(reading != lastButtonReading) {
@@ -114,135 +97,132 @@ void handleDisplayButton() {
 
     stableButtonState = reading;
     if(stableButtonState == LOW) {
-        if(currentUUID.empty()) {
+        if(activityId != 0) {
+            currentDisplayState = cycleDisplayStateActive(currentDisplayState);
+        } else {
             currentIdleDisplayState =
                 cycleDisplayStateIdle(currentIdleDisplayState);
-            idleDisplayDirty = true;
-        } else {
-            currentDisplayState = cycleDisplayStateActive(currentDisplayState);
         }
     }
+
+    forceDisplayUpdate = true;
 }
 
-void updateIdleDisplay() {
-    std::string message;
-    switch(currentIdleDisplayState) {
-        case DisplayStateIdle::SHOWING_CURRENT_TIME: {
-            struct tm timeinfo;
-            if(!getLocalTime(&timeinfo)) {
-                Serial.println("Failed to obtain time");
-                return;
-            }
+const u32_t NFC_READER_DELAY = 300;
+const u8_t MAX_READ_RETRY = 3;
 
-            char currentTime[64];
-            strftime(currentTime, sizeof(currentTime), "%d/%m/%Y %H:%M:%S",
-                     &timeinfo);
-            message = currentTime;
-            break;
-        }
-        case DisplayStateIdle::SHOWING_QR_CODE:
-            message = "QR code unavailable";
-            break;
-    }
+uint64_t weekActivityDuration;
+uint64_t monthActivityDuration;
 
-    if(idleDisplayDirty or currentIdleDisplayState != lastIdleDisplayState or
-       message != lastIdleDisplayMessage) {
-        displayManager.showMessage(message);
-        lastIdleDisplayState = currentIdleDisplayState;
-        lastIdleDisplayMessage = message;
-        idleDisplayDirty = false;
-    }
-}
-
-// NFC reading + Activity tracking +  OLED display
-void tickMainLogic() {
+u32_t lastTickLMainLogic = 0;
+u8_t readRetry = 0;
+std::vector<uint8_t> activityUUID;
+std::string activityName = "";
+void tickCardHandler() {
     if(millis() - lastTickLMainLogic < NFC_READER_DELAY) return;
     lastTickLMainLogic = millis();
 
     std::vector<uint8_t> readUUID = nfcReader.readTagUUID();
 
-    //Not exactly sure why, but seens that if you are constaly priting this things, and you close serial monitor
-    //  spoky behiviur starts to apper, so take that into account when using it.
-    //printUUID("Read UUID   ", readUUID);
-    //printUUID("Current UUID", currentUUID);
-
-    if(readUUID.empty() and currentUUID.empty()) {
-        updateIdleDisplay();
+    if(readUUID.empty() and activityUUID.empty()) {
         return;
     }
-    if(readUUID.empty() and !currentUUID.empty() and
+    if(readUUID.empty() and !activityUUID.empty() and
        readRetry < MAX_READ_RETRY) {
         readRetry++;
         return;
     };
-    bool activityWasActive = !currentUUID.empty();
-    currentUUID = readUUID;
-
     readRetry = 0;
 
-    if(currentUUID.size() != 0) {
-        idleDisplayDirty = true;
-        uint32_t uuidHash =
-            ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
-        activityTracker.updateActivity(uuidHash);
+    u32_t newActivityId =
+        ~esp_rom_crc32_le(~0UL, readUUID.data(), readUUID.size());
+    bool cardChange = newActivityId != activityId;
 
-        ActivityNameRecord activityNameRecord;
-        if(!NameRegister::searchRecord(uuidHash,activityNameRecord)){
-            ActivityNameRecord newActivityNameRecord = {
-                uuidHash,
-                "CHANGE_ME_IN_THE_WEB",
-                0,
-                0,
-                0,
-            };
-            NameRegister::addRecord(newActivityNameRecord);
-            activityNameRecord=newActivityNameRecord;
-        }
+    activityId = newActivityId;
+    activityUUID = readUUID;
 
-        switch(currentDisplayState) {
-            case DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME: {
-                displayManager.showActivityTrackTime(
-                    activityNameRecord.name, activityTracker.getCurrentActivityDuration());
-                break;
+    if(activityId != 0) {
+        activityTracker.updateActivity(activityId);
+        if(cardChange) {
+            forceDisplayUpdate = true;
+            currentDisplayState =
+                DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
+            ActivityNameRecord activityNameRecord;
+            if(!NameRegister::searchRecord(activityId, activityNameRecord)) {
+                ActivityNameRecord newActivityNameRecord = {
+                    activityId, "CHANGE_ME_IN_THE_WEB", 0, 0, 0,
+                };
+                NameRegister::addRecord(newActivityNameRecord);
+                activityNameRecord = newActivityNameRecord;
             }
-            case DisplayStateActive::SHOWING_ACTIVITY_TRACK_SUMMARY: {
-                time_t currentUnixTime;
-                time(&currentUnixTime);
+            activityName = activityNameRecord.name;
 
-                time_t startWeekUnixTime =
-                    TimeUtils::getStartOfWeekUnixTime(currentUnixTime);
-                time_t startMonthUnixTime =
-                    TimeUtils::getStartOfMonthUnixTime(currentUnixTime);
-
-                uint64_t weekActivityDuration =
-                    activityTracker.getCurrentActivityDuration() +
-                    ActivityHistory::getFromToActivityDuration(
-                        uuidHash, startWeekUnixTime, currentUnixTime);
-
-                uint64_t monthActivityDuration =
-                    activityTracker.getCurrentActivityDuration() +
-                    ActivityHistory::getFromToActivityDuration(
-                        uuidHash, startMonthUnixTime, currentUnixTime);
-
-                displayManager.showActivityTrackSummary(
-                    activityNameRecord.name, weekActivityDuration, monthActivityDuration);
-                break;
-            }
-            default:
-                break;
+            time_t currentUnixTime;
+            time(&currentUnixTime);
+            time_t startWeekUnixTime =
+                TimeUtils::getStartOfWeekUnixTime(currentUnixTime);
+            uint64_t weekActivityDuration =
+                ActivityHistory::getFromToActivityDuration(
+                    activityId, startWeekUnixTime, currentUnixTime);
+            time_t startMonthUnixTime =
+                TimeUtils::getStartOfMonthUnixTime(currentUnixTime);
+            uint64_t monthActivityDuration =
+                ActivityHistory::getFromToActivityDuration(
+                    activityId, startMonthUnixTime, currentUnixTime);
         }
     } else {
-        if(activityWasActive) {
+        if(cardChange) {
+            forceDisplayUpdate = true;
             activityTracker.stopActivity();
             currentIdleDisplayState = DisplayStateIdle::SHOWING_CURRENT_TIME;
-            idleDisplayDirty = true;
+            activityName = "";
         }
-        updateIdleDisplay();
     }
+}
+
+void tickDisplayStateActive() {
+    switch(currentDisplayState) {
+        case DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME: {
+            displayManager.showActivityTrackTime(
+                activityName, activityTracker.getCurrentActivityDuration(),
+                forceDisplayUpdate);
+            break;
+        }
+        case DisplayStateActive::SHOWING_ACTIVITY_TRACK_SUMMARY: {
+            u64_t currentTrackerTime =
+                activityTracker.getCurrentActivityDuration();
+
+            displayManager.showActivityTrackSummary(
+                activityName, currentTrackerTime + weekActivityDuration,
+                currentTrackerTime + monthActivityDuration, forceDisplayUpdate);
+            break;
+        }
+        default:
+            break;
+    }
+    forceDisplayUpdate = false;
+}
+
+void tickDisplayStateIdle() {
+    switch(currentIdleDisplayState) {
+        case DisplayStateIdle::SHOWING_CURRENT_TIME: {
+            displayManager.showCurrentTime("CurrentTime", forceDisplayUpdate);
+            break;
+        }
+        case DisplayStateIdle::SHOWING_QR_CODE:
+            displayManager.showQRCode("QR", forceDisplayUpdate);
+            break;
+    }
+    forceDisplayUpdate = false;
 }
 
 void loop() {
     handleDisplayButton();
     serialCommandHandler.handle();
-    tickMainLogic();
+    tickCardHandler();
+    if(activityId != 0) {
+        tickDisplayStateActive();
+    } else {
+        tickDisplayStateIdle();
+    }
 }
