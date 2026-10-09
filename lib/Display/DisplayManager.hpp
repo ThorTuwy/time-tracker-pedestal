@@ -53,8 +53,7 @@ class DisplayManager {
                                   const uint64_t activityMonthDuration,
                                   bool forceUpdate = false);
 
-    void showCurrentTime(const std::string& currentTime,
-                         bool forceUpdate = false);
+    void showCurrentTime(bool forceUpdate = false);
     void showQRCode(const std::string& qrCode, bool forceUpdate = false);
 
     void showMessage(const std::string& msg);
@@ -77,6 +76,7 @@ class DisplayManager {
     std::string activityName;
 
     uint64_t lastActivityDuration = 0;
+    uint32_t lastCurrentTimeMinute = UINT32_MAX;
 
     uint64_t lastActivityWeekDuration = 0;
     uint64_t lastActivityMonthDuration = 0;

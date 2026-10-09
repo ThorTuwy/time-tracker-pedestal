@@ -129,10 +129,34 @@ void DisplayManager::showActivityTrackSummary(
     display.display();
 }
 
-void DisplayManager::showCurrentTime(const std::string& currentTime,
-                                     bool forceUpdate) {
-    showIdleText(DisplayStateIdle::SHOWING_CURRENT_TIME, currentTime,
-                 forceUpdate);
+void DisplayManager::showCurrentTime(bool forceUpdate) {
+    time_t now;
+    time(&now);
+    struct tm localTime;
+    if(localtime_r(&now, &localTime) == nullptr) return;
+
+    uint32_t hours = localTime.tm_hour;
+    uint32_t minutes = localTime.tm_min;
+    uint32_t currentMinute = (hours * 60) + minutes;
+    if(!forceUpdate and currentMinute == lastCurrentTimeMinute) return;
+    lastCurrentTimeMinute = currentMinute;
+
+    setupNewShow();
+    display.setFont(&FreeMono9pt7b);
+    display.setTextSize(2);
+
+    char timeStr[6];
+    snprintf(timeStr, sizeof(timeStr), "%02u:%02u", hours, minutes);
+
+    int16_t x1, y1;
+    uint16_t textWidth, textHeight;
+    display.getTextBounds(timeStr, 0, 0, &x1, &y1, &textWidth, &textHeight);
+    int16_t textX = (display.width() - textWidth) / 2 - x1;
+    int16_t textY = (display.height() - textHeight) / 2 - y1;
+    display.setCursor(textX, textY);
+    display.print(timeStr);
+
+    display.display();
 }
 
 void DisplayManager::showQRCode(const std::string& qrCode, bool forceUpdate) {

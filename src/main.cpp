@@ -206,7 +206,7 @@ void tickDisplayStateActive() {
 void tickDisplayStateIdle() {
     switch(currentIdleDisplayState) {
         case DisplayStateIdle::SHOWING_CURRENT_TIME: {
-            displayManager.showCurrentTime("CurrentTime", forceDisplayUpdate);
+            displayManager.showCurrentTime(forceDisplayUpdate);
             break;
         }
         case DisplayStateIdle::SHOWING_QR_CODE:
