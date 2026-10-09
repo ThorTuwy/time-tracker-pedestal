@@ -65,8 +65,6 @@ class DisplayManager {
     static constexpr int8_t OLED_RESET = -1;
 
     void setupNewShow();
-    void showIdleText(DisplayStateIdle state, const std::string& text,
-                      bool forceUpdate);
     void displayActivityName(const std::string& activityName);
     void displayAnalogClock(uint32_t hours, uint32_t minutes);
 

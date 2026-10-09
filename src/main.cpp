@@ -25,6 +25,7 @@ SerialCommandHandler serialCommandHandler;
 // TODO: Make something on device to configure this.
 const char* ssid = "*";
 const char* password = "*";
+std::string webServerUrl;
 
 void setupWIFI() {
     Serial.printf("Connecting to %s ", ssid);
@@ -67,6 +68,8 @@ void setup() {
     activityTracker.begin();
 
     setupWIFI();
+    webServerUrl = "http://";
+    webServerUrl += WiFi.localIP().toString().c_str();
     setupNTP();
 
     WebServer::begin();
@@ -210,7 +213,7 @@ void tickDisplayStateIdle() {
             break;
         }
         case DisplayStateIdle::SHOWING_QR_CODE:
-            displayManager.showQRCode("QR", forceDisplayUpdate);
+            displayManager.showQRCode(webServerUrl, forceDisplayUpdate);
             break;
     }
     forceDisplayUpdate = false;

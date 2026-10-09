@@ -1,5 +1,7 @@
 #include "DisplayManager.hpp"
 
+#include <QRCodeGFX.h>
+
 DisplayManager::DisplayManager(uint8_t address)
     : i2cAddress(address),
       display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1),
@@ -160,24 +162,36 @@ void DisplayManager::showCurrentTime(bool forceUpdate) {
 }
 
 void DisplayManager::showQRCode(const std::string& qrCode, bool forceUpdate) {
-    showIdleText(DisplayStateIdle::SHOWING_QR_CODE, qrCode, forceUpdate);
-}
-
-void DisplayManager::showIdleText(DisplayStateIdle state,
-                                  const std::string& text, bool forceUpdate) {
     if(!forceUpdate) return;
 
     setupNewShow();
-    display.setTextSize(1);
+    QRCodeGFX qrcode(display);
+    qrcode.setScale(2);
+    qrcode.setColors(SSD1306_WHITE, SSD1306_BLACK);
+    qrcode.getGenerator().setVersionRange(1, 9);
 
-    int16_t x1, y1;
-    uint16_t textWidth, textHeight;
-    display.getTextBounds(text.c_str(), 0, 0, &x1, &y1, &textWidth,
-                          &textHeight);
-    int16_t textX = (display.width() - textWidth) / 2;
-    if(textX < 3) textX = 3;
-    display.setCursor(textX, (display.height() + textHeight) / 2);
-    display.print(text.c_str());
+    if(!qrcode.generateData(qrCode.c_str())) {
+        const char* errorText = "QR too large";
+        int16_t x1, y1;
+        uint16_t textWidth, textHeight;
+        display.getTextBounds(errorText, 0, 0, &x1, &y1, &textWidth,
+                              &textHeight);
+        int16_t textX = (display.width() - textWidth) / 2 - x1;
+        int16_t textY = (display.height() - textHeight) / 2 - y1;
+        display.setCursor(textX, textY);
+        display.print(errorText);
+        display.display();
+        return;
+    }
+
+    int16_t sideLength = qrcode.getSideLength();
+    if(sideLength > display.height() - 2) {
+        qrcode.setScale(1);
+        sideLength = qrcode.getSideLength();
+    }
+    int16_t x = (display.width() - sideLength) / 2;
+    int16_t y = (display.height() - sideLength) / 2;
+    qrcode.draw(x, y);
     display.display();
 }
 
