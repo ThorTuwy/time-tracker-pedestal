@@ -9,10 +9,34 @@
 
 #include <string>
 
-enum class DisplayState : uint8_t {
+enum class DisplayStateActive : uint8_t {
     SHOWING_ACTIVITY_TRACK_TIME = 0,
     SHOWING_ACTIVITY_TRACK_SUMMARY = 1
 };
+inline DisplayStateActive cycleDisplayStateActive(
+    DisplayStateActive currentState) {
+    switch(currentState) {
+        case DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME:
+            return DisplayStateActive::SHOWING_ACTIVITY_TRACK_SUMMARY;
+        case DisplayStateActive::SHOWING_ACTIVITY_TRACK_SUMMARY:
+            return DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
+    }
+    return DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
+}
+
+enum class DisplayStateIdle : uint8_t {
+    SHOWING_CURRENT_TIME = 0,
+    SHOWING_QR_CODE = 1
+};
+inline DisplayStateIdle cycleDisplayStateIdle(DisplayStateIdle currentState) {
+    switch(currentState) {
+        case DisplayStateIdle::SHOWING_CURRENT_TIME:
+            return DisplayStateIdle::SHOWING_QR_CODE;
+        case DisplayStateIdle::SHOWING_QR_CODE:
+            return DisplayStateIdle::SHOWING_CURRENT_TIME;
+    }
+    return DisplayStateIdle::SHOWING_CURRENT_TIME;
+}
 
 class DisplayManager {
    public:
@@ -44,7 +68,7 @@ class DisplayManager {
 
     std::string activityName;
 
-    DisplayState lastShowState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
+    DisplayStateActive lastShowState = DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
 
     uint64_t lastActivityDuration = 0;
 

@@ -34,10 +34,10 @@ void DisplayManager::showActivityTrackTime(const std::string& activityName,
 
     if((hours == prevHours and minutes == prevMinutes) and
        lastActivityDuration != 0 and
-       lastShowState == DisplayState::SHOWING_ACTIVITY_TRACK_TIME)
+       lastShowState == DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME)
         return;
     lastActivityDuration = activityDuration;
-    lastShowState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
+    lastShowState = DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
 
     setupNewShow();
 
@@ -105,12 +105,12 @@ void DisplayManager::showActivityTrackSummary(
 
     if((weekHours == prevWeekHours and monthHours == prevMonthHours) and
        lastActivityWeekDuration != 0 and lastActivityMonthDuration != 0 and
-       lastShowState == DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY)
+       lastShowState == DisplayStateActive::SHOWING_ACTIVITY_TRACK_SUMMARY)
         return;
 
     lastActivityWeekDuration = activityWeekDuration;
     lastActivityMonthDuration = activityMonthDuration;
-    lastShowState = DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY;
+    lastShowState = DisplayStateActive::SHOWING_ACTIVITY_TRACK_SUMMARY;
 
     setupNewShow();
 

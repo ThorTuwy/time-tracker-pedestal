@@ -93,7 +93,11 @@ u32_t lastTickLMainLogic = 0;
 u8_t readRetry = 0;
 std::vector<uint8_t> currentUUID;
 
-DisplayState currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
+DisplayStateActive currentDisplayState = DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME;
+DisplayStateIdle currentIdleDisplayState = DisplayStateIdle::SHOWING_CURRENT_TIME;
+DisplayStateIdle lastIdleDisplayState = DisplayStateIdle::SHOWING_QR_CODE;
+std::string lastIdleDisplayMessage;
+bool idleDisplayDirty = true;
 int lastButtonReading = HIGH;
 int stableButtonState = HIGH;
 u32_t lastButtonChangeTime = 0;
@@ -110,11 +114,43 @@ void handleDisplayButton() {
 
     stableButtonState = reading;
     if(stableButtonState == LOW) {
-        if(currentDisplayState == DisplayState::SHOWING_ACTIVITY_TRACK_TIME) {
-            currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY;
+        if(currentUUID.empty()) {
+            currentIdleDisplayState =
+                cycleDisplayStateIdle(currentIdleDisplayState);
+            idleDisplayDirty = true;
         } else {
-            currentDisplayState = DisplayState::SHOWING_ACTIVITY_TRACK_TIME;
+            currentDisplayState = cycleDisplayStateActive(currentDisplayState);
         }
+    }
+}
+
+void updateIdleDisplay() {
+    std::string message;
+    switch(currentIdleDisplayState) {
+        case DisplayStateIdle::SHOWING_CURRENT_TIME: {
+            struct tm timeinfo;
+            if(!getLocalTime(&timeinfo)) {
+                Serial.println("Failed to obtain time");
+                return;
+            }
+
+            char currentTime[64];
+            strftime(currentTime, sizeof(currentTime), "%d/%m/%Y %H:%M:%S",
+                     &timeinfo);
+            message = currentTime;
+            break;
+        }
+        case DisplayStateIdle::SHOWING_QR_CODE:
+            message = "QR code unavailable";
+            break;
+    }
+
+    if(idleDisplayDirty or currentIdleDisplayState != lastIdleDisplayState or
+       message != lastIdleDisplayMessage) {
+        displayManager.showMessage(message);
+        lastIdleDisplayState = currentIdleDisplayState;
+        lastIdleDisplayMessage = message;
+        idleDisplayDirty = false;
     }
 }
 
@@ -131,6 +167,7 @@ void tickMainLogic() {
     //printUUID("Current UUID", currentUUID);
 
     if(readUUID.empty() and currentUUID.empty()) {
+        updateIdleDisplay();
         return;
     }
     if(readUUID.empty() and !currentUUID.empty() and
@@ -138,11 +175,13 @@ void tickMainLogic() {
         readRetry++;
         return;
     };
+    bool activityWasActive = !currentUUID.empty();
     currentUUID = readUUID;
 
     readRetry = 0;
 
     if(currentUUID.size() != 0) {
+        idleDisplayDirty = true;
         uint32_t uuidHash =
             ~esp_rom_crc32_le(~0UL, currentUUID.data(), currentUUID.size());
         activityTracker.updateActivity(uuidHash);
@@ -161,12 +200,12 @@ void tickMainLogic() {
         }
 
         switch(currentDisplayState) {
-            case DisplayState::SHOWING_ACTIVITY_TRACK_TIME: {
+            case DisplayStateActive::SHOWING_ACTIVITY_TRACK_TIME: {
                 displayManager.showActivityTrackTime(
                     activityNameRecord.name, activityTracker.getCurrentActivityDuration());
                 break;
             }
-            case DisplayState::SHOWING_ACTIVITY_TRACK_SUMMARY: {
+            case DisplayStateActive::SHOWING_ACTIVITY_TRACK_SUMMARY: {
                 time_t currentUnixTime;
                 time(&currentUnixTime);
 
@@ -193,17 +232,12 @@ void tickMainLogic() {
                 break;
         }
     } else {
-        activityTracker.stopActivity();
-        struct tm timeinfo;
-        if(!getLocalTime(&timeinfo)) {
-            Serial.println("Failed to obtain time");
-            return;
+        if(activityWasActive) {
+            activityTracker.stopActivity();
+            currentIdleDisplayState = DisplayStateIdle::SHOWING_CURRENT_TIME;
+            idleDisplayDirty = true;
         }
-
-        char currentTime[64];
-        strftime(currentTime, sizeof(currentTime), "%d/%m/%Y %H:%M:%S",
-                 &timeinfo);
-        displayManager.showMessage(currentTime);
+        updateIdleDisplay();
     }
 }
 
