@@ -89,3 +89,9 @@ or with the following command on the CLI:
 ```sh
 pio run -t uploadfs
 ```
+# Sponsors
+
+This project is a participant of the [EasyEDA Spark 2026](https://oshwlab.com/activities/easyeda-spark-2026), and because of that, it has been provided with subsidized PCBs by JLBPCB.
+
+Thanks a lot to EasyEDA/JLBPCB for that. I recommend all people participate even if you know nothing about PCB (like me when I started), as it is one of the coolest experiences !!! 
+<img src="docs/assets/easy-eda-spark-logo.png" alt="EasyEDA Spark 2026 logo" style="display: inline-block;">
