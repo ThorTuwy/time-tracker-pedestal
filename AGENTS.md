@@ -29,7 +29,7 @@ SDA=5, SCL=4, CLRC663 NFC reader @ `0x28`, SSD1306 128x64 OLED @ `0x3C`. All I2C
 - **`ActivityRecord` is memcpy'd raw** to `/history.bin` as `sizeof(ActivityRecord)` bytes. Reordering or resizing the struct silently invalidates every record already on device.
 - **`ActivityTracker` uses `time()`, not `getLocalTime()`** — timestamps are epoch seconds, unaffected by the configured TZ. `configTzTime()` in `setup()` only affects the display.
 - **Time is only valid after boot sync.** `setup()` blocks until NTP succeeds, so `time()`-based logic must never run before that; don't move module `begin()` calls above the NTP block without thinking.
-- **WiFi credentials and NTP server/timezone are hardcoded in `src/main.cpp`**, each marked `//TODO: Make something on device to configure this.` Don't add new secrets, and don't refactor them into a settings module unless asked.
+- **WiFi credentials live in gitignored `include/secrets.h`**; `include/secrets.example.h` is the committed template. The build intentionally fails if the local secrets file is missing. Never commit it. NTP server/timezone remain hardcoded in `src/main.cpp`; don't add new secrets or refactor them into a settings module unless asked.
 - `readTagUUID()` does a full `softReset()` + `AN1102_recommended_registers()` for ISO14443A, then retries as ISO15693 with a hardcoded `0x0F0F0F0F` password. Both protocols are probed on every poll (~300 ms), so the reset cost is real.
 
 ## Conventions

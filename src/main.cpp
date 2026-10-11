@@ -15,6 +15,10 @@
 #include <WebServer.hpp>
 
 #include "Config.h"
+#if !__has_include("secrets.h")
+#error "Missing include/secrets.h - copy include/secrets.example.h to include/secrets.h and fill in your WiFi credentials."
+#endif
+#include "secrets.h"
 
 NfcReader nfcReader(Config::CLRC663_I2C_ADDRESS);
 DisplayManager displayManager(Config::OLED_I2C_ADDRESS);
@@ -22,14 +26,11 @@ DisplayManager displayManager(Config::OLED_I2C_ADDRESS);
 ActivityTracker activityTracker;
 SerialCommandHandler serialCommandHandler;
 
-// TODO: Make something on device to configure this.
-const char* ssid = "*";
-const char* password = "*";
 std::string webServerUrl;
 
 void setupWIFI() {
-    Serial.printf("Connecting to %s ", ssid);
-    WiFi.begin(ssid, password);
+    Serial.printf("Connecting to %s ", WIFI_SSID);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while(WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");

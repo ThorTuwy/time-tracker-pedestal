@@ -58,6 +58,14 @@ This project is build using platformio, so you would need to have it install:
 
 https://platformio.org/install/integration
 
+## Harcoded config (Temp)
+
+I am going to implement temp/web config for the project, but for now
+you should put your Wi-Fi credentials so you can connect to the website, and device can connect to NTP server.
+
+To do this, you should go to /include, copy and remove the .example. from secrets.example.h, and fill your own Wi-Fi credentials. 
+
+
 ## Run the project
 >[!WARNING]
 >If you are trying to upload the firemware to a new time-tracker-device (or any ESP32) you would need
@@ -81,4 +89,3 @@ or with the following command on the CLI:
 ```sh
 pio run -t uploadfs
 ```
-
