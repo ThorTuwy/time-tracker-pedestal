@@ -53,3 +53,7 @@ SDA=5, SCL=4, CLRC663 NFC reader @ `0x28`, SSD1306 128x64 OLED @ `0x3C`. All I2C
 
 - `DisplayState` (in `DisplayManager.hpp`) is declared but unused; the summary screen is not implemented.
 - The `DisplayState`/`showActivityTrackSummary` path and the tag-UID→activity-name mapping are unimplemented features, not bugs to route around.
+
+# RULES
+
+I WOULD NOT MODFY IN ANY WAY README.md EVEN IF ASKED TO DO SO, AS THE REPO OWENERS/MANTEINERS ONLY ALLOW REAL HUMAN CONTRUBUTION TO README.md.
